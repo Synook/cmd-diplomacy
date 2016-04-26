@@ -108,6 +108,10 @@ class Turn(object):
     # MUST include call to try_do_order if about to displace to give a chance
     # for displaced unit to move, if there is an appropriate order. BUT check
     # for position swaps first.
+    # BUT lift unit off board before calling try_do_order to allow for triangles
+    # then place after the call returns. Maybe some way of moving it to the dest?
+    # or it doesn't matter since existence check is done when parsing order.
+    # Can just move, update DB then call.
     def __do_order(self, order):
         pass
 
