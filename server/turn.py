@@ -8,14 +8,113 @@ class Turn(object):
 
     def do_turn(turn):
         moves = self.db.move.find({'turn': turn})
+        orders = []
         for move in moves:
-            move['parsed'] = self.__parse_order(move['nation'], move['order'])
+            parsed = self.__parse_order(move['nation'], move['order'])
+            if parsed:
+                orders.append(parsed)
 
-        while len(moves):
+        last_len = len(order) + 1
+        while len(order) < last_len:
+            last_len = len(order)
+            self.__successful_order(orders)
 
+    def __successful_order(self, orders):
+        # select move order
+        i = 0
+        while i < len(orders):
+            order = orders[i]
+            if order['type'] == 'move':
+                break
+        if i == len(orders):
+            return
+
+        self.__try_do_order(order, orders)
+
+    def __try_do_order(self, order, orders):
+
+        # loop until order is done or nothing is possible
+        # actually more like loop by region
+        checked = set()
+        while True:
+            # TODO: check if convoy
+
+            # check for unit at dst
+            unit_at_dst = False
+            if db.territory.find({'shortname': order['dst'], 'unit': {'$ne': None}}):
+                # check if target unit is moving away
+                # if so, do that first (easier)
+                for other in orders:
+                    if other['unit'] == order['dst'] and other['dst'] not in checked:
+                        checked.add(order['unit'])
+                        order = other
+                        continue
+                unit_at_dst = True
+
+            # check for winner at dst by support
+            dst = order['dst']
+            candidates = []
+            best_candidate = None
+            best_candidate_support = 1
+            for other in orders:
+                if other['dst'] == dst: # candidate
+                    candidates.append(other)
+                    support_score = self.__calc_support(other, orders)
+                    if support_score > best_candidate_support:
+                        best_candidate_support = support_score
+                        best_candidate = other
+                    elif support_score == best_candidate_support:
+                        best_candidate = None
+
+            # don't forget to check person at dst
+            if unit_at_dst:
+                support_score = self.__calc_support(dst, orders)
+                if support_score >= best_candidate_support:
+                    # unit as dst holds, no-one is moving
+                    best_candidate = None
+
+            # delete all candidates: no one else is moving
+            for candidate in candidates:
+                orders.remove(candidate)
+
+            # execute winning order
+            if best_candidate:
+                self.__do_order(best_candidate)
+
+            break
+
+    def __calc_support(self, order, orders):
+        support_score = 1
+        for support in orders:
+            add = 1
+            if support['type'] == 'support' and (
+                type(order) == dict and # support move
+                support['target']['dst'] == order['dst'] and
+                support['target']['unit'] == order['unit']
+            ) or (
+                type(order) == str and # support hold
+                support['target']['dst'] == order and
+                support['target']['unit'] == None
+            ):
+                # check for cutting
+                for cutter in orders:
+                    if cutter['type'] == 'move' and cutter['dst'] == support['unit']:
+                        add = 0
+                        break
+            support_score += add
+        return support_score
+
+    # TODO: implement
+    # MUST include call to try_do_order if about to displace to give a chance
+    # for displaced unit to move, if there is an appropriate order. BUT check
+    # for position swaps first.
+    def __do_order(self, order):
+        pass
 
     # (A|F) Abc(-Def| (S|C) (A|F) Abc-Def)
     # nationality markings not supported
+    # TODO: coastal movement and two-coast support
+    # maybe just entirely special support
     def __parse_order(self, nation, order):
         try:
             split = re.split('\s+', move_str)
@@ -26,7 +125,7 @@ class Turn(object):
                 # not a unit type
                 return None
 
-            if split[1].indexOf('-') > -1:
+            if split[1].find('-') > -1:
                 result['type'] = 'move'
                 (result['unit'], result['dst']) = split[1].split('-')
 
@@ -37,7 +136,10 @@ class Turn(object):
                 if result['target']['unit_type'] not in ['A', 'F']:
                     # not a unit type
                     return None
-                (result['target']['unit'], result['target']['dst']) = split[4].split('-')
+                (result['target']['unit'], result['target']['dst']) = (
+                    split[4].split('-') if split[4].find('-') > -1
+                    else (None, split[4])
+                )
                 if not self.db.territory.find({
                     'shortname': result['target']['unit'],
                     'land': result['target']['unit_type'] == 'A'
@@ -46,7 +148,7 @@ class Turn(object):
                     return None
 
                 if split[2] == 'S':
-                    if not self.__can_move_to(result['target']['unit_type'], result['target']['unit'], result['target']['dst']):
+                    if result['target']['unit'] and not self.__can_move_to(result['target']['unit_type'], result['target']['unit'], result['target']['dst']):
                         # supported unit cannot make move
                         return None
                     if not self.__can_move_to(result['unit_type'], result['unit'], result['target']['dst']):
@@ -59,6 +161,10 @@ class Turn(object):
                         return None
                     if not db.territory.find({'shortname': result['target']['dst'], land: True}):
                         # destination is not land
+                        return None
+                    if not db.territory.find({'shortname': result['unit'], land: False}):
+                        # fleets on land cannot convoy
+                        return None
                     result['type'] = 'convoy'
 
                 else:

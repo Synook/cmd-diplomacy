@@ -9,3 +9,4 @@ interaction.
 - Client
 - Database design
 - Turn logic (hardest)
+  - The 10 billion (not really) special cases
