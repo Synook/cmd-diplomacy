@@ -1,16 +1,18 @@
+import re
+
 # processes a turn, producing a list of changes to the board
 # uses recursive descent to resolve conflicts
 
 class Turn(object):
-    def __init__(db, log):
+    def __init__(self, db, log):
         self.db = db
         self.log = log
 
-    def do_turn(turn):
+    def do_turn(self, turn):
         moves = self.db.move.find({'turn': turn})
         orders = []
         for move in moves:
-            parsed = self.__parse_order(move['nation'], move['order'])
+            parsed = self.parse_order(move['nation'], move['order'])
             if parsed:
                 orders.append(parsed)
 
@@ -115,18 +117,21 @@ class Turn(object):
     def __do_order(self, order):
         pass
 
+    def debug(self, msg):
+        print msg
+
     # (A|F) Abc(-Def| (S|C) (A|F) Abc-Def)
     # nationality markings not supported
     # TODO: coastal movement and two-coast support
     # maybe just entirely special support
-    def __parse_order(self, nation, order):
+    def parse_order(self, nation, order):
         try:
-            split = re.split('\s+', move_str)
+            split = re.split('\s+', order)
             result = {}
 
             result['unit_type'] = split[0]
             if result['unit_type'] not in ['A', 'F']:
-                # not a unit type
+                self.debug('not a unit type')
                 return None
 
             if split[1].find('-') > -1:
@@ -138,7 +143,7 @@ class Turn(object):
                 result['target'] = {}
                 result['target']['unit_type'] = split[3]
                 if result['target']['unit_type'] not in ['A', 'F']:
-                    # not a unit type
+                    self.debug('target not a unit type')
                     return None
                 (result['target']['unit'], result['target']['dst']) = (
                     split[4].split('-') if split[4].find('-') > -1
@@ -179,16 +184,16 @@ class Turn(object):
                 'unit': nation, 'shortname': result['unit'],
                 'land': result['unit_type'] == 'A'
             }).count():
-                # no such unit
+                self.debug('no such unit')
                 return None
 
             return result
-        except:
-            # malformed order
+        except Exception as e:
+            self.debug('malformed order '+ e.message)
             return None
 
     def __are_adjacent(self, a, b):
-        return self.db.territory.find({'shortname': a, 'neighbors': b}) and
+        return self.db.territory.find({'shortname': a, 'neighbors': b})
 
     def __can_move_to(self, type, a, b):
         return (
@@ -197,8 +202,9 @@ class Turn(object):
                 # army - b is land
                 type == 'A' and self.db.territory.find({'shortname': b, 'land': True}) or
                 # fleet - b is sea or coastal
-                type == 'F' and self.db.territory.find({'shortname': b, {
+                type == 'F' and self.db.territory.find({
+                    'shortname': b,
                     '$or': {'coastal': True, 'land': False}
-                )
+                })
             )
         )
