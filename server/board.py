@@ -32,6 +32,15 @@ class Board(object):
     def add_nation(self, name):
         self.db.nation.insert({'name': name})
 
+    def add_move(self, turn, nation, order):
+        # TODO: check for nation here
+        self.db.move.insert({
+            'turn': turn, 'nation': nation, 'order': order
+        })
+
+    def get_territory(self, shortname):
+        return self.db.territory.find_one({'shortname': shortname})
+
     def reset(self):
         self.db.territory.delete_many({})
         self.db.nation.delete_many({})

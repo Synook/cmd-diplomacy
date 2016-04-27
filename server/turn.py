@@ -16,9 +16,9 @@ class Turn(object):
             if parsed:
                 orders.append(parsed)
 
-        last_len = len(order) + 1
-        while len(order) < last_len:
-            last_len = len(order)
+        last_len = len(orders) + 1
+        while len(orders) < last_len:
+            last_len = len(orders)
             self.__successful_order(orders)
 
     def __successful_order(self, orders):
@@ -43,7 +43,7 @@ class Turn(object):
 
             # check for unit at dst
             unit_at_dst = False
-            if db.territory.find({'shortname': order['dst'], 'unit': {'$ne': None}}):
+            if self.db.territory.find({'shortname': order['dst'], 'unit': {'$ne': None}}):
                 # check if target unit is moving away
                 # if so, do that first (easier)
                 for other in orders:
@@ -168,10 +168,10 @@ class Turn(object):
                     if result['unit_type'] != 'F':
                         # only fleets can convoy
                         return None
-                    if not db.territory.find({'shortname': result['target']['dst'], land: True}):
+                    if not self.db.territory.find({'shortname': result['target']['dst'], land: True}):
                         # destination is not land
                         return None
-                    if not db.territory.find({'shortname': result['unit'], land: False}):
+                    if not self.db.territory.find({'shortname': result['unit'], land: False}):
                         # fleets on land cannot convoy
                         return None
                     result['type'] = 'convoy'
