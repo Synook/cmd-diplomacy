@@ -137,6 +137,7 @@ class Turn(object):
             if split[1].find('-') > -1:
                 result['type'] = 'move'
                 (result['unit'], result['dst']) = split[1].split('-')
+                # TODO: can check can_move for F
 
             else:
                 result['unit'] = split[1]
