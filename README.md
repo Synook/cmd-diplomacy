@@ -6,7 +6,8 @@ interaction.
 ## TODO
 
 - Web API
-- Client
-- Database design
+- Client (Python command-line tool)
+- Visualisation (/map endpoint)
 - Turn logic (hardest)
   - The 10 billion (not really) special cases
+- Logging, so people know what's going on

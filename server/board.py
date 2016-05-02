@@ -83,3 +83,13 @@ class Board(object):
                 })
             )
         )
+
+    def nation_at(self, sn):
+        return self.db.territory.find_one({'shortname': sn})['unit']
+
+    def move_unit(self, unit, dst):
+        nation = self.nation_at(unit)
+        if not nation:
+            raise Exception('Tried to move non-existent unit!')
+        self.db.territory.update({'shortname': unit}, {'$set': {'unit': None}})
+        self.db.territory.update({'shortname': dst}, {'$set': {'unit': nation}})

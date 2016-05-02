@@ -14,7 +14,7 @@ class TurnTestCase(unittest.TestCase):
         for a in ['La', 'Lb', 'Lc', 'Ld', 'Le']:
             self.board.add_territory(a)
         for a in ['Sa', 'Sb', 'Sc', 'Sd']:
-            self.board.add_territory(a)
+            self.board.add_territory(a, land=False)
 
         for a in (
             ('La', 'Lb'), ('La', 'Ld'),

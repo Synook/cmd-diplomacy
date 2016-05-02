@@ -1,4 +1,5 @@
 import re
+from board import Board
 
 # processes a turn, producing a list of changes to the board
 # uses recursive descent to resolve conflicts
@@ -6,6 +7,7 @@ import re
 class Turn(object):
     def __init__(self, db, log):
         self.db = db
+        self.board = Board(db)
         self.log = log
 
     def do_turn(self, turn):
@@ -24,26 +26,26 @@ class Turn(object):
     def __successful_order(self, orders):
         # select move order
         i = 0
-        while i < len(orders):
-            order = orders[i]
+        for order in orders:
             if order['type'] == 'move':
-                break
-        if i == len(orders):
-            return
+                if self.__try_do_order(order, orders):
+                    break
 
-        self.__try_do_order(order, orders)
 
     def __try_do_order(self, order, orders):
 
         # loop until order is done or nothing is possible
         # actually more like loop by region
         checked = set()
+        print 'trying order', order
         while True:
-            # TODO: check if convoy
+            # TODO: if land, check if adjacent / convoy
+
+            # TODO: if F, check if valid
 
             # check for unit at dst
             unit_at_dst = False
-            if self.db.territory.find({'shortname': order['dst'], 'unit': {'$ne': None}}):
+            if self.board.nation_at(order['dst']):
                 # check if target unit is moving away
                 # if so, do that first (easier)
                 for other in orders:
@@ -81,9 +83,11 @@ class Turn(object):
 
             # execute winning order
             if best_candidate:
-                self.__do_order(best_candidate)
+                self.__do_order(best_candidate, orders)
+                return True
 
-            break
+            return False
+
 
     def __calc_support(self, order, orders):
         support_score = 1
@@ -114,8 +118,9 @@ class Turn(object):
     # then place after the call returns. Maybe some way of moving it to the dest?
     # or it doesn't matter since existence check is done when parsing order.
     # Can just move, update DB then call.
-    def __do_order(self, order):
-        pass
+    def __do_order(self, order, orders):
+        displaced_unit = self.board.nation_at(order['dst'])
+        self.board.move_unit(order['unit'], order['dst'])
 
     def debug(self, msg):
         print msg
