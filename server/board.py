@@ -93,3 +93,6 @@ class Board(object):
             raise Exception('Tried to move non-existent unit!')
         self.db.territory.update({'shortname': unit}, {'$set': {'unit': None}})
         self.db.territory.update({'shortname': dst}, {'$set': {'unit': nation}})
+
+    def set_to_retreat(self, sn, nation):
+        self.db.territory.update({'shortname': sn}, {'$set': {'to_retreat': nation}})

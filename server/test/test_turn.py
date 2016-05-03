@@ -66,6 +66,16 @@ class TurnExecuteTestCase(TurnTestCase):
         self.assertEqual(self.board.get_territory('Lb')['unit'], '1')
 
     def test_blocked_move(self):
+        self.board.add_move('1901-S', '1', 'A La-Lb')
+        self.board.set_unit('2', 'Lb')
+        self.turn.do_turn('1901-S')
+        self.assertEqual(self.board.get_territory('La')['unit'], '1')
+        self.assertEqual(self.board.get_territory('Lb')['unit'], '2')
+
+    def test_displacing_move(self):
+        pass
+
+    def test_contested_move(self):
         pass
 
     def test_vacating_move(self):
@@ -77,7 +87,8 @@ class TurnExecuteTestCase(TurnTestCase):
         self.assertEqual(self.board.get_territory('Lb')['unit'], '1')
         self.assertEqual(self.board.get_territory('Lc')['unit'], '2')
 
-
+    def test_triangle_move(self):
+        pass
 
     # swap
 

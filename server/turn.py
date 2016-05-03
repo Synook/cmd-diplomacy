@@ -37,7 +37,6 @@ class Turn(object):
         # loop until order is done or nothing is possible
         # actually more like loop by region
         checked = set()
-        print 'trying order', order
         while True:
             # TODO: if land, check if adjacent / convoy
 
@@ -48,18 +47,22 @@ class Turn(object):
             if self.board.nation_at(order['dst']):
                 # check if target unit is moving away
                 # if so, do that first (easier)
+                switching = False
                 for other in orders:
                     if other['unit'] == order['dst'] and other['dst'] not in checked:
                         checked.add(order['unit'])
                         order = other
-                        continue
+                        switching = True
+                        break
+                if switching:
+                    continue
                 unit_at_dst = True
 
             # check for winner at dst by support
             dst = order['dst']
             candidates = []
             best_candidate = None
-            best_candidate_support = 1
+            best_candidate_support = 0
             for other in orders:
                 if other['dst'] == dst: # candidate
                     candidates.append(other)
@@ -121,9 +124,15 @@ class Turn(object):
     def __do_order(self, order, orders):
         displaced_unit = self.board.nation_at(order['dst'])
         self.board.move_unit(order['unit'], order['dst'])
+        for other in orders:
+            if other['unit'] == order['dst'] and other['dst'] != order['unit']:
+                if not self.__try_do_order(other, orders):
+                    self.board.set_to_retreat(other['dst'], displaced_unit)
+                break
+
 
     def debug(self, msg):
-        print msg
+        pass#print msg
 
     # (A|F) Abc(-Def| (S|C) (A|F) Abc-Def)
     # nationality markings not supported
