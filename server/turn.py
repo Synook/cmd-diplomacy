@@ -44,16 +44,20 @@ class Turn(object):
 
             # check for unit at dst
             unit_at_dst = False
+            cycle = False
             if self.board.nation_at(order['dst']):
                 # check if target unit is moving away
                 # if so, do that first (easier)
                 switching = False
                 for other in orders:
-                    if other['unit'] == order['dst'] and other['dst'] not in checked:
-                        checked.add(order['unit'])
-                        order = other
-                        switching = True
-                        break
+                    if other['unit'] == order['dst']:
+                        if other['dst'] not in checked:
+                            checked.add(order['unit'])
+                            order = other
+                            switching = True
+                            break
+                        else:
+                            cycle = True
                 if switching:
                     continue
                 unit_at_dst = True
@@ -74,7 +78,7 @@ class Turn(object):
                         best_candidate = None
 
             # don't forget to check person at dst
-            if unit_at_dst:
+            if unit_at_dst and not cycle:
                 support_score = self.__calc_support(dst, orders)
                 if support_score >= best_candidate_support:
                     # unit as dst holds, no-one is moving
@@ -123,7 +127,7 @@ class Turn(object):
     # Can just move, update DB then call.
     def __do_order(self, order, orders):
         displaced_unit = self.board.nation_at(order['dst'])
-        self.board.move_unit(order['unit'], order['dst'])
+        self.board.move_unit(order['unit'], order['dst'], nation=order['nation'])
         for other in orders:
             if other['unit'] == order['dst'] and other['dst'] != order['unit']:
                 if not self.__try_do_order(other, orders):
@@ -141,7 +145,7 @@ class Turn(object):
     def parse_order(self, nation, order):
         try:
             split = re.split('\s+', order)
-            result = {}
+            result = {'nation': nation}
 
             result['unit_type'] = split[0]
             if result['unit_type'] not in ['A', 'F']:

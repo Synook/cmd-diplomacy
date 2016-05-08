@@ -35,6 +35,7 @@ class TurnTestCase(unittest.TestCase):
 
         self.board.add_nation('1')
         self.board.add_nation('2')
+        self.board.add_nation('3')
         self.board.set_unit('1', 'La')
 
     def tearDown(self):
@@ -46,7 +47,8 @@ class TurnParserTestCase(TurnTestCase):
             'type': 'move',
             'unit_type': 'A',
             'unit': 'La',
-            'dst': 'Lb'
+            'dst': 'Lb',
+            'nation': '1'
         })
 
     def test_no_unit(self):
@@ -65,6 +67,21 @@ class TurnExecuteTestCase(TurnTestCase):
         self.assertEqual(self.board.get_territory('La')['unit'], None)
         self.assertEqual(self.board.get_territory('Lb')['unit'], '1')
 
+    def test_sea_move(self):
+        pass
+
+    def test_sea_land_move(self):
+        pass
+
+    def test_non_coastal_fleet_move(self):
+        pass
+
+    def test_army_land_sea_move(self):
+        pass
+
+    def test_convoy_move(self):
+        pass
+
     def test_blocked_move(self):
         self.board.add_move('1901-S', '1', 'A La-Lb')
         self.board.set_unit('2', 'Lb')
@@ -73,7 +90,8 @@ class TurnExecuteTestCase(TurnTestCase):
         self.assertEqual(self.board.get_territory('Lb')['unit'], '2')
 
     def test_displacing_move(self):
-        pass
+        self.board.set_unit('2', 'Lb')
+
 
     def test_contested_move(self):
         pass
@@ -88,7 +106,16 @@ class TurnExecuteTestCase(TurnTestCase):
         self.assertEqual(self.board.get_territory('Lc')['unit'], '2')
 
     def test_triangle_move(self):
-        pass
+        self.board.set_unit('2', 'Lb')
+        self.board.set_unit('3', 'Ld')
+        self.board.add_move('1901-S', '1', 'A La-Lb')
+        self.board.add_move('1901-S', '2', 'A Lb-Ld')
+        self.board.add_move('1901-S', '3', 'A Ld-La')
+        self.turn.do_turn('1901-S')
+        self.assertEqual(self.board.get_territory('La')['unit'], '3')
+        self.assertEqual(self.board.get_territory('Lb')['unit'], '1')
+        self.assertEqual(self.board.get_territory('Ld')['unit'], '2')
+
 
     # swap
 
